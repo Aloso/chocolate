@@ -29,7 +29,7 @@ h1 {
     margin: 0;
     padding: 0;
     box-shadow: inset -0.3rem -0.3rem 0.6rem #0003;
-    background: linear-gradient(45deg, #563030, #4d2525);
+    background: linear-gradient(45deg, #563730, #4d2d25);
 
     &:first-child {
       background: linear-gradient(45deg, #385630, #344d25);

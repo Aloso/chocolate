@@ -34,12 +34,53 @@ class ChocolateBar {
     this.startMove()
   }
 
+  haveLost(cells) {
+    const flattened = cells.flat()
+    return flattened[0] == true && flattened.slice(1).every(c => !c)
+  }
+
+  cloneCells(cells) {
+    return cells.map(r => r.slice())
+  }
+
+  canWin(cells) {
+    for (let i = 0; i < this.#height; i++) {
+      for (let j = 0; j < this.#width; j++) {
+        if (cells[i][j] && i + j > 0) {
+          const copy = this.cloneCells(cells)
+          this.eatChocolate(copy, i, j)
+          if (!this.canWin(copy)) { return true }
+        }
+      }
+    }
+    return false
+  }
+
+  determineWinner() {
+    if (this.canWin(this.#cells)) {
+      return this.#move
+    }
+    else return this.#move === 'A' ? 'B' : 'A'
+  }
+
   startMove() {
-    this.#info.textContent = `Player ${this.#move}`
+    this.#info.textContent = `Player ${this.#move}'s move. `
+    if (this.haveLost(this.#cells)) {
+      this.#info.textContent += `Player ${this.#move} has lost`
+    }
+    else this.#info.textContent += `Player ${this.determineWinner()} can still win`
+  }
+
+  eatChocolate(cells, row, col) {
+    for (let i = row; i < this.#height; i++) {
+      for (let j = col; j < this.#width; j++) {
+        cells[i][j] = false;
+      }
+    }
   }
 
   applyMove(row, col) {
-    if (this.#cells[row][col]) {
+    if (this.#cells[row][col] && row + col > 0) {
       for (let i = row; i < this.#height; i++) {
         for (let j = col; j < this.#width; j++) {
           this.#cells[i][j] = false;
