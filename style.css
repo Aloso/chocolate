@@ -47,3 +47,68 @@ h1 {
     }
   }
 }
+
+#info {
+  white-space: pre-wrap;
+}
+
+#modal {
+  position: fixed;
+  box-sizing: border-box;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 400px;
+  max-width: 90vw;
+  background-color: white;
+  color: black;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 50rem #0002;
+
+  &:empty {
+    display: none;
+  }
+
+  h2 {
+    margin-top: 0;
+  }
+
+  input[type="number"] {
+    box-sizing: border-box;
+    width: 48%;
+    padding: 0.5rem;
+    border: 2px solid #3c66e2;
+    border-radius: 0.33rem;
+    font: inherit;
+
+    &:last-of-type {
+      margin-left: 4%;
+    }
+  }
+
+  button {
+    margin-top: 1.5rem;
+    border: 2px solid #868686;
+    border-radius: 0.33rem;
+    padding: 0.5rem;
+    font: inherit;
+    width: 48%;
+    transition: 0.2s;
+
+    &.modal-submit {
+      width: 100%;
+    }
+
+    &.modal-submit, &.modal-confirm {
+      background-color: #3c66e2;
+      border-color: transparent;
+      color: white;
+    }
+
+    &:hover, &:focus {
+      filter: brightness(0.85);
+    }
+  }
+}

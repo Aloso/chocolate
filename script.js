@@ -1,24 +1,43 @@
 class ChocolateBar {
+  /** @type {number} */
   #width
+  /** @type {number} */
   #height
-  #cells
+  /** @type {number[]} */
+  #rows
   #el
   #info
-  #move
+  #modal
+  #currentPlayer
+  /** @type {Map<string, boolean>} */
+  #cache
 
-  constructor(width, height) {
+  constructor() {
+    this.#el = document.getElementById("chocolate-bar")
+    this.#info = document.getElementById("info")
+    this.#modal = document.getElementById("modal")
+  }
+
+  async startGame(title) {
+    const [width, height] = await this.showModal({
+      type: 'prompt',
+      title,
+      text: 'Set the dimensions of the chocolate bar:'
+    })
+    this.initGame(width, height)
+    this.startMove()
+  }
+
+  initGame(/** @type number */ width, /** @type number */ height) {
     this.#width = width
     this.#height = height
-    this.#cells = Array.from({ length: this.#height })
-      .fill(0)
-      .map(row => Array.from({ length: this.#width }).fill(true))
-    this.#move = 'A'
+    this.#rows = Array.from({ length: this.#height }).fill(this.#width)
+    this.#currentPlayer = 'A'
+    this.#cache = new Map()
 
-    this.#el = document.getElementById("chocolate-bar")
     this.#el.style.setProperty("--rows", height)
     this.#el.style.setProperty("--cols", width)
-
-    this.#info = document.getElementById("info")
+    this.#el.innerHTML = ''
 
     for (let i = 0; i < height; i++) {
       for (let j = 0; j < width; j++) {
@@ -30,67 +49,140 @@ class ChocolateBar {
         this.#el.append(cell)
       }
     }
-
-    this.startMove()
   }
 
-  haveLost(cells) {
-    const flattened = cells.flat()
-    return flattened[0] == true && flattened.slice(1).every(c => !c)
+  startMove() {
+    this.#info.textContent = `Player ${this.#currentPlayer}'s move.\n`
+    if (this.haveLost(this.#rows)) {
+      this.#info.textContent = `Player ${this.#currentPlayer} has lost!`
+      setTimeout(() => {
+        board.startGame('Restart game?')
+      }, 1500)
+    } else {
+      console.time('determine winner')
+      this.#info.textContent += `Player ${this.determineWinner()} can still win.`
+      console.timeEnd('determine winner')
+    }
   }
 
-  cloneCells(cells) {
-    return cells.map(r => r.slice())
+  haveLost(rows) {
+    return rows[0] == 1 && rows.slice(1).every(r => r == 0)
   }
 
-  canWin(cells) {
+  canWin(rows) {
+    const cacheKey = rows.join(",")
+    const cached = this.#cache.get(cacheKey)
+    if (cached !== undefined) {
+      return cached
+    }
+
     for (let i = 0; i < this.#height; i++) {
       for (let j = 0; j < this.#width; j++) {
-        if (cells[i][j] && i + j > 0) {
-          const copy = this.cloneCells(cells)
+        if (rows[i] > j && i + j > 0) {
+          const copy = rows.slice()
           this.eatChocolate(copy, i, j)
-          if (!this.canWin(copy)) { return true }
+          if (!this.canWin(copy)) {
+            this.#cache.set(cacheKey, true)
+            return true
+          }
         }
       }
     }
+    this.#cache.set(cacheKey, false)
     return false
   }
 
   determineWinner() {
-    if (this.canWin(this.#cells)) {
-      return this.#move
+    if (this.canWin(this.#rows)) {
+      return this.#currentPlayer
+    } else {
+      return this.#currentPlayer === 'A' ? 'B' : 'A'
     }
-    else return this.#move === 'A' ? 'B' : 'A'
   }
 
-  startMove() {
-    this.#info.textContent = `Player ${this.#move}'s move. `
-    if (this.haveLost(this.#cells)) {
-      this.#info.textContent += `Player ${this.#move} has lost`
-    }
-    else this.#info.textContent += `Player ${this.determineWinner()} can still win`
-  }
-
-  eatChocolate(cells, row, col) {
+  eatChocolate(rows, row, col) {
     for (let i = row; i < this.#height; i++) {
-      for (let j = col; j < this.#width; j++) {
-        cells[i][j] = false;
-      }
+      rows[i] = Math.min(rows[i], col)
     }
   }
 
   applyMove(row, col) {
-    if (this.#cells[row][col] && row + col > 0) {
+    if (this.#rows[row] > col && row + col > 0) {
+      this.eatChocolate(this.#rows, row, col)
       for (let i = row; i < this.#height; i++) {
         for (let j = col; j < this.#width; j++) {
-          this.#cells[i][j] = false;
           this.#el.children[i * this.#width + j].classList.add("removed");
         }
       }
-      this.#move = this.#move === 'A' ? 'B' : 'A'
+      this.#currentPlayer = this.#currentPlayer === 'A' ? 'B' : 'A'
       this.startMove()
     }
   }
+
+  async showModal({ type, title, text }) {
+    return new Promise(resolve => {
+      this.#modal.textContent = ''
+      if (title) {
+        const elem = document.createElement('h2')
+        elem.textContent = title
+        this.#modal.append(elem)
+      }
+      if (text) {
+        const elem = document.createElement('p')
+        elem.textContent = text
+        this.#modal.append(elem)
+      }
+
+      if (type === "alert") {
+        this.#modal.append(this.makeButton('Okay', 'modal-submit', () => {
+          this.#modal.innerHTML = ''
+          resolve(false)
+        }))
+      } else if (type === "confirm") {
+        this.#modal.append(this.makeButton('Cancel', 'modal-cancel', () => {
+          this.#modal.innerHTML = ''
+          resolve(false)
+        }))
+        this.#modal.append(this.makeButton('Confirm', 'modal-confirm', () => {
+          this.#modal.innerHTML = ''
+          resolve(true)
+        }))
+      } else if (type === "prompt") {
+        const w = this.makeNumberInput('modal-input', "6")
+        const h = this.makeNumberInput('modal-input', "6")
+        this.#modal.append(w, h)
+        this.#modal.append(this.makeButton('Submit', 'modal-submit', () => {
+          const width = +w.value
+          const height = +h.value
+          if (Number.isNaN(width) || Number.isNaN(height) || width === 0 || height === 0) {
+            return
+          }
+          this.#modal.innerHTML = ''
+          resolve([width, height])
+        }))
+      }
+    })
+  }
+
+  makeButton(label, className, onClick) {
+    const elem = document.createElement("button")
+    elem.textContent = label
+    elem.type = "button"
+    elem.className = className
+    elem.addEventListener("click", onClick)
+    return elem
+  }
+
+  makeNumberInput(className, defaultValue) {
+    const elem = document.createElement("input")
+    elem.type = "number"
+    elem.value = defaultValue
+    elem.className = className
+    elem.min = 1
+    elem.max = 10
+    return elem
+  }
 }
 
-const board = new ChocolateBar(5, 4)
+const board = new ChocolateBar()
+board.startGame('Start game')
