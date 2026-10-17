@@ -1,6 +1,8 @@
 class ChocolateBar {
-  #width = 6
-  #height = 6
+  #width 
+  #height 
+  #showEval
+
   /** @type {number[]} */
   #rows
   #el
@@ -10,26 +12,32 @@ class ChocolateBar {
   /** @type {Map<string, boolean>} */
   #cache
 
-  constructor() {
+  constructor(width, height, showEval) {
     this.#el = document.getElementById("chocolate-bar")
     this.#info = document.getElementById("info")
     this.#modal = document.getElementById("modal")
+    this.#width = width
+    this.#height = height
+    this.#showEval = showEval
   }
 
   async startGame(title) {
-    const [width, height] = await this.showModal({
+    const [width, height, showEval] = await this.showModal({
       type: 'prompt',
       title,
       text: 'Set the dimensions of the chocolate bar:',
       defaults: [this.#width, this.#height]
     })
-    this.initGame(width, height)
+    this.initGame(width, height, showEval)
     this.startMove()
   }
 
-  initGame(/** @type number */ width, /** @type number */ height) {
+  initGame(/** @type number */ width, /** @type number */ height, /** @type boolean */ showEval) {
     this.#width = width
     this.#height = height
+    this.#showEval = showEval
+    sessionStorage.setItem("current-state", JSON.stringify({ width, height, showEval }))
+
     this.#rows = Array.from({ length: this.#height }).fill(this.#width)
     this.#currentPlayer = 'A'
     this.#cache = new Map()
@@ -57,10 +65,8 @@ class ChocolateBar {
       setTimeout(() => {
         board.startGame('Restart game?')
       }, 1500)
-    } else {
-      console.time('determine winner')
+    } else if (this.#showEval) {
       this.#info.textContent += `Player ${this.determineWinner()} can still win.`
-      console.timeEnd('determine winner')
     }
   }
 
@@ -149,15 +155,17 @@ class ChocolateBar {
       } else if (type === "prompt") {
         const w = this.makeNumberInput('modal-input', defaults[0] ?? "6")
         const h = this.makeNumberInput('modal-input', defaults[1] ?? "6")
-        this.#modal.append(w, h)
+        const e = this.makeCheckboxInput('Show evaluation', 'eval-checkbox', this.#showEval)
+        this.#modal.append(w, h, e)
         this.#modal.append(this.makeButton('Submit', 'modal-submit', () => {
           const width = +w.value
           const height = +h.value
+          const showEval = e.children[0].checked
           if (Number.isNaN(width) || Number.isNaN(height) || width === 0 || height === 0) {
             return
           }
           this.#modal.innerHTML = ''
-          resolve([width, height])
+          resolve([width, height, showEval])
         }))
       }
     })
@@ -181,7 +189,23 @@ class ChocolateBar {
     elem.max = 10
     return elem
   }
+
+  makeCheckboxInput(label, className, defaultValue) {
+    const elem = document.createElement("input")
+    elem.type = "checkbox"
+    elem.checked = defaultValue ?? false
+
+    const labelElem = document.createElement("label")
+    labelElem.className = className
+    labelElem.append(elem, label)
+    return labelElem
+  }
 }
 
-const board = new ChocolateBar()
+const previousState = sessionStorage.getItem("current-state")
+const { width, height, showEval } = previousState
+  ? JSON.parse(previousState)
+  : { width: 6, height: 6, showEval: false }
+
+const board = new ChocolateBar(width, height, showEval)
 board.startGame('Start game')

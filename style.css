@@ -83,8 +83,17 @@ h1 {
     border-radius: 0.33rem;
     font: inherit;
 
-    &:last-of-type {
+    &:nth-of-type(2) {
       margin-left: 4%;
+    }
+  }
+
+  label {
+    display: block;
+    margin: 1rem 0 0 0;
+
+    input[type="checkbox"] {
+      margin-right: 0.5rem;
     }
   }
 
