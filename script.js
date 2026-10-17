@@ -1,8 +1,6 @@
 class ChocolateBar {
-  /** @type {number} */
-  #width
-  /** @type {number} */
-  #height
+  #width = 6
+  #height = 6
   /** @type {number[]} */
   #rows
   #el
@@ -22,7 +20,8 @@ class ChocolateBar {
     const [width, height] = await this.showModal({
       type: 'prompt',
       title,
-      text: 'Set the dimensions of the chocolate bar:'
+      text: 'Set the dimensions of the chocolate bar:',
+      defaults: [this.#width, this.#height]
     })
     this.initGame(width, height)
     this.startMove()
@@ -119,7 +118,7 @@ class ChocolateBar {
     }
   }
 
-  async showModal({ type, title, text }) {
+  async showModal({ type, title, text, defaults }) {
     return new Promise(resolve => {
       this.#modal.textContent = ''
       if (title) {
@@ -148,8 +147,8 @@ class ChocolateBar {
           resolve(true)
         }))
       } else if (type === "prompt") {
-        const w = this.makeNumberInput('modal-input', "6")
-        const h = this.makeNumberInput('modal-input', "6")
+        const w = this.makeNumberInput('modal-input', defaults[0] ?? "6")
+        const h = this.makeNumberInput('modal-input', defaults[1] ?? "6")
         this.#modal.append(w, h)
         this.#modal.append(this.makeButton('Submit', 'modal-submit', () => {
           const width = +w.value
